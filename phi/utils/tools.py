@@ -2,7 +2,7 @@ from typing import Dict, Any, Optional
 
 from phi.tools.function import Function, FunctionCall
 from phi.utils.functions import get_function_call
-
+from phi.utils.log import logger
 
 def get_function_call_for_tool_call(
     tool_call: Dict[str, Any], functions: Optional[Dict[str, Function]] = None
@@ -10,9 +10,12 @@ def get_function_call_for_tool_call(
     if tool_call.get("type") == "function":
         _tool_call_id = tool_call.get("id")
         _tool_call_function = tool_call.get("function")
+        logger.debug(f"tool_call_function: {_tool_call_function}")
         if _tool_call_function is not None:
             _tool_call_function_name = _tool_call_function.get("name")
+            logger.debug(f"tool_call_function_name: {_tool_call_function_name}")
             _tool_call_function_arguments_str = _tool_call_function.get("arguments")
+            logger.debug(f"tool_call_function_arguments_str: {_tool_call_function_arguments_str}")
             if _tool_call_function_name is not None:
                 return get_function_call(
                     name=_tool_call_function_name,

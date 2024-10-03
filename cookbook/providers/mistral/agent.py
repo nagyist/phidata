@@ -1,12 +1,17 @@
+import os
+
 from phi.agent import Agent, RunResponse  # noqa
-from phi.model.mistral import Mistral
+from phi.model.mistral import MistralChat
 from phi.tools.yfinance import YFinanceTools
 
+api_key = os.getenv("MISTRAL_API_KEY")
+
 agent = Agent(
-    model=Mistral(model="open-mistral-nemo"),
+    model=MistralChat(id="open-mistral-nemo", api_key=api_key),
     tools=[YFinanceTools(stock_price=True)],
     show_tool_calls=True,
     markdown=True,
+    debug_mode=True,
 )
 
 # Get the response in a variable
