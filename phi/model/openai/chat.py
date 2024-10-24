@@ -365,6 +365,8 @@ class OpenAIChat(Model):
         Returns:
             Iterator[ChatCompletionChunk]: An iterator of chat completion chunks.
         """
+        logger.debug(f"Messages to send: {messages}")
+        logger.debug(self.request_kwargs)
         yield from self.get_client().chat.completions.create(
             model=self.id,
             messages=[m.to_dict() for m in messages],  # type: ignore

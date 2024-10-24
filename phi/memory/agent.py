@@ -284,6 +284,10 @@ class AgentMemory(BaseModel):
         if self.manager is None:
             self.manager = MemoryManager(user_id=self.user_id, db=self.db)
 
+        else:
+            self.manager.user_id = self.user_id
+            self.manager.db = self.db
+
         response = self.manager.run(input)
         self.load_user_memories()
         self.updating_memory = False
@@ -311,6 +315,10 @@ class AgentMemory(BaseModel):
 
         if self.manager is None:
             self.manager = MemoryManager(user_id=self.user_id, db=self.db)
+
+        else:
+            self.manager.user_id = self.user_id
+            self.manager.db = self.db
 
         response = await self.manager.arun(input)
         self.load_user_memories()
