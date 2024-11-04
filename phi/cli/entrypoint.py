@@ -138,13 +138,14 @@ def ping(
         set_log_level_to_debug()
 
     from phi.api.user import user_ping
-    from phi.cli.console import print_info
+    from phi.cli.settings import phi_cli_settings
 
-    ping_success = user_ping()
+    ping_success, runtime_ms = user_ping()
     if ping_success:
-        print_info("Ping successful")
+        logger.info(f"✨ Ping successful ({runtime_ms:.2f}ms)")
+        logger.info(f"You are connected to the {phi_cli_settings.api_runtime} phidata servers")
     else:
-        print_info("Could not ping phidata servers")
+        logger.info("❌ Could not reach phidata servers")
 
 
 @phi_cli.command(short_help="Print phi config")

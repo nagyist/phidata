@@ -10,22 +10,29 @@ from phi.cli.settings import phi_cli_settings
 from phi.utils.log import logger
 
 
-def user_ping() -> bool:
+def user_ping() -> tuple[bool, float]:
+    """Ping the phidata servers and return success status and runtime in milliseconds"""
+
     if not phi_cli_settings.api_enabled:
-        return False
+        return False, 0.0
+
+    import time
 
     logger.debug("--**-- Ping user api")
     with api.Client() as api_client:
         try:
+            start_time = time.perf_counter()
             r: Response = api_client.get(ApiRoutes.USER_HEALTH)
+            runtime_ms = (time.perf_counter() - start_time) * 1000  # Convert to milliseconds
+
             if invalid_response(r):
-                return False
+                return False, runtime_ms
 
             if r.status_code == codes.OK:
-                return True
+                return True, runtime_ms
         except Exception as e:
             logger.debug(f"Could not ping user api: {e}")
-    return False
+    return False, 0.0
 
 
 def authenticate_and_get_user(auth_token: str, existing_user: Optional[UserSchema] = None) -> Optional[UserSchema]:
