@@ -35,30 +35,30 @@ def create_playground_endpoint(playground: PlaygroundEndpointCreate) -> bool:
     return False
 
 
-def deploy_playground_archive(name: str, tar_path: Path) -> bool:
-    """Deploy a playground archive.
+def deploy_playground_artifact(name: str, artifact_path: Path) -> bool:
+    """Deploy a playground artifact.
 
     Args:
-        name (str): Name of the archive
-        tar_path (Path): Path to the tar file
+        name (str): Name of the artifact
+        artifact_path (Path): Path to the artifacttar file
 
     Returns:
         bool: True if deployment was successful
 
     Raises:
-        ValueError: If tar_path is invalid or file is too large
+        ValueError: If artifact_path is invalid or file is too large
         RuntimeError: If deployment fails
     """
     logger.debug("--**-- Deploying Playground App")
 
     # Validate input
-    if not tar_path.exists():
-        raise ValueError(f"Tar file not found: {tar_path}")
+    if not artifact_path.exists():
+        raise ValueError(f"Artifact not found: {artifact_path}")
 
     # Check file size (e.g., 100MB limit)
     max_size = 100 * 1024 * 1024  # 100MB
-    if tar_path.stat().st_size > max_size:
-        raise ValueError(f"Tar file too large: {tar_path.stat().st_size} bytes (max {max_size} bytes)")
+    if artifact_path.stat().st_size > max_size:
+        raise ValueError(f"Artifact exceeds size limit: {artifact_path.stat().st_size} bytes (max {max_size} bytes)")
 
     # Build headers
     headers = {}
@@ -69,10 +69,10 @@ def deploy_playground_archive(name: str, tar_path: Path) -> bool:
 
     try:
         with (
-            HttpxClient(base_url=phi_cli_settings.api_url, headers=headers) as api_client,
-            open(tar_path, "rb") as file,
+            HttpxClient(base_url=phi_cli_settings.api_url, headers=headers, timeout=120) as api_client,
+            open(artifact_path, "rb") as file,
         ):
-            files = {"file": (tar_path.name, file, "application/gzip")}
+            files = {"file": (artifact_path.name, file, "application/gzip")}
             r: Response = api_client.post(
                 ApiRoutes.PLAYGROUND_APP_DEPLOY,
                 files=files,

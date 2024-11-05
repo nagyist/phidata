@@ -1,3 +1,4 @@
+import time
 import tarfile
 from pathlib import Path
 from typing import Optional, List, cast
@@ -7,7 +8,7 @@ from rich.text import Text
 from rich.panel import Panel
 
 from phi.cli.settings import phi_cli_settings
-from phi.api.playground import deploy_playground_archive
+from phi.api.playground import deploy_playground_artifact
 from phi.utils.log import logger
 
 
@@ -91,63 +92,63 @@ def create_error_panel(deployment_info: Text) -> Panel:
     )
 
 
-def create_tar_archive(root: Path) -> Path:
-    """Create a gzipped tar archive of the playground files.
+def create_tar_artifact(root: Path) -> Path:
+    """Create a gzipped tar artifact of the playground files.
 
     Args:
-        root (Path): The path to the directory to be archived
+        root (Path): The path to the directory to be artifactd
 
     Returns:
-        Path: The path to the created tar archive
+        Path: The path to the created tar artifact
 
     Raises:
-        Exception: If archive creation fails
+        Exception: If artifact creation fails
     """
-    tar_path = root.with_suffix(".tar.gz")
+    artifact_path = root.with_suffix(".tar.gz")
     try:
-        logger.debug(f"Creating playground archive: {tar_path.name}")
-        with tarfile.open(tar_path, "w:gz") as tar:
+        logger.debug(f"Creating playground artifact: {artifact_path.name}")
+        with tarfile.open(artifact_path, "w:gz") as tar:
             tar.add(root, arcname=root.name)
-        logger.debug(f"Successfully created playground archive: {tar_path.name}")
-        return tar_path
+        logger.debug(f"Successfully created playground artifact: {artifact_path.name}")
+        return artifact_path
     except Exception as e:
-        logger.error(f"Failed to create playground archive: {e}")
+        logger.error(f"Failed to create playground artifact: {e}")
         raise
 
 
-def deploy_archive(name: str, tar_path: Path) -> None:
-    """Deploying the tar archive to phi-cloud.
+def deploy_artifact(name: str, artifact_path: Path) -> None:
+    """Deploy the tar artifact to phi-cloud.
 
     Args:
         name (str): The name of the playground app
-        tar_path (Path): The path to the tar archive to be deployed
+        artifact_path (Path): The path to the tar artifact to be deployed
 
     Raises:
         Exception: If the deployment process fails
     """
     try:
-        logger.debug(f"Deploying playground archive: {tar_path.name}")
-        deploy_playground_archive(name=name, tar_path=tar_path)
-        logger.debug(f"Successfully deployed playground archive: {tar_path.name}")
+        logger.debug(f"Deploying playground artifact: {artifact_path.name}")
+        deploy_playground_artifact(name=name, artifact_path=artifact_path)
+        logger.debug(f"Successfully deployed playground artifact: {artifact_path.name}")
     except Exception:
         raise
 
 
-def cleanup_archive(tar_path: Path) -> None:
-    """Delete the temporary tar archive after deployment.
+def cleanup_artifact(artifact_path: Path) -> None:
+    """Delete the temporary tar artifact after deployment.
 
     Args:
-        tar_path (Path): The path to the tar archive to be deleted
+        artifact_path (Path): The path to the tar artifact to be deleted
 
     Raises:
         Exception: If the deletion process fails
     """
     try:
-        logger.debug(f"Deleting playground archive: {tar_path.name}")
-        tar_path.unlink()
-        logger.debug(f"Successfully deleted playground archive: {tar_path.name}")
+        logger.debug(f"Deleting playground artifact: {artifact_path.name}")
+        artifact_path.unlink()
+        logger.debug(f"Successfully deleted playground artifact: {artifact_path.name}")
     except Exception as e:
-        logger.error(f"Failed to delete playground archive: {e}")
+        logger.error(f"Failed to delete playground artifact: {e}")
         raise
 
 
@@ -159,8 +160,8 @@ def deploy_playground_app(
     """Deploy a playground application to phi-cloud.
 
     This function:
-    1. Creates a tar archive of the root directory.
-    2. Uploades the archive to phi-cloud.
+    1. Creates a tar artifact of the root directory.
+    2. Uploades the artifact to phi-cloud.
     3. Cleaning up temporary files.
     4. Displaying real-time progress updates.
 
@@ -195,7 +196,6 @@ def deploy_playground_app(
         try:
             deployment_info = create_deployment_info(app=app, root=root, status="Initializing...")
             panels: List[Panel] = [create_info_panel(deployment_info=deployment_info)]
-
             status = Status(
                 "[bold blue]Initializing playground...[/bold blue]",
                 spinner="aesthetic",
@@ -204,39 +204,60 @@ def deploy_playground_app(
             panels.append(status)  # type: ignore
             live_display.update(Group(*panels))
 
-            # Step 1: Create archive
-            status.update("[bold blue]Creating playground archive...[/bold blue]")
-            tar_path = create_tar_archive(root=root)
+            # Step 1: Create artifact
+            status.update("[bold blue]Creating playground app...[/bold blue]")
             panels[0] = create_info_panel(
                 create_deployment_info(
-                    app=app, root=root, elapsed_time=f"{response_timer.elapsed:.1f}s", status="Creating archive..."
+                    app=app, root=root, elapsed_time=f"{response_timer.elapsed:.1f}s", status="Creating artifact..."
                 )
             )
             live_display.update(Group(*panels))
+            artifact_path = create_tar_artifact(root=root)
 
-            # Step 2: Upload archive
-            status.update("[bold blue]Uploading playground archive...[/bold blue]")
-            deploy_archive(name=name, tar_path=tar_path)
+            # Step 2: Deploy artifact
+            status.update("[bold blue]Uploading playground app...[/bold blue]")
             panels[0] = create_info_panel(
                 create_deployment_info(
-                    app=app, root=root, elapsed_time=f"{response_timer.elapsed:.1f}s", status="Uploading archive..."
+                    app=app, root=root, elapsed_time=f"{response_timer.elapsed:.1f}s", status="Uploading artifact..."
                 )
             )
             live_display.update(Group(*panels))
+            deploy_artifact(name=name, artifact_path=artifact_path)
 
-            # Step 3: Cleanup
-            status.update("[bold blue]Deleting playground archive...[/bold blue]")
-            cleanup_archive(tar_path)
+            # Step 3: Wait for deployment to complete
+            status.update("[bold blue]Deploying playground app...[/bold blue]")
+            deploy_complete = False
+            num_runs = 0
+            while not deploy_complete:
+                panels[0] = create_info_panel(
+                    create_deployment_info(
+                        app=app, root=root, elapsed_time=f"{response_timer.elapsed:.1f}s", status="Deploying..."
+                    )
+                )
+                live_display.update(Group(*panels))
+                time.sleep(0.5)  # Sleep for 0.5 seconds
+                num_runs += 1
+                if num_runs > 10:
+                    deploy_complete = True
+
+            # Step 4: Cleanup
+            status.update("[bold blue]Deleting playground artifact...[/bold blue]")
             panels[0] = create_info_panel(
                 create_deployment_info(
-                    app=app, root=root, elapsed_time=f"{response_timer.elapsed:.1f}s", status="Deleting archive..."
+                    app=app, root=root, elapsed_time=f"{response_timer.elapsed:.1f}s", status="Deleting artifact..."
                 )
             )
             live_display.update(Group(*panels))
+            cleanup_artifact(artifact_path)
 
             # Final display update
             status.stop()
             panels.pop()
+            panels[0] = create_info_panel(
+                create_deployment_info(
+                    app=app, root=root, elapsed_time=f"{response_timer.elapsed:.1f}s", status="Playground app deployed!"
+                )
+            )
             live_display.update(Group(*panels))
         except Exception as e:
             status.update(f"[bold red]Deployment failed: {str(e)}[/bold red]")
