@@ -8,7 +8,7 @@ from rich.text import Text
 from rich.panel import Panel
 
 from phi.cli.settings import phi_cli_settings
-from phi.api.playground import deploy_playground_artifact
+from phi.api.playground import start_playground_app_deploy
 from phi.utils.log import logger
 
 
@@ -108,7 +108,7 @@ def create_tar_artifact(root: Path) -> Path:
     try:
         logger.debug(f"Creating playground artifact: {artifact_path.name}")
         with tarfile.open(artifact_path, "w:gz") as tar:
-            tar.add(root, arcname=root.name)
+            tar.add(root, arcname="workspace")
         logger.debug(f"Successfully created playground artifact: {artifact_path.name}")
         return artifact_path
     except Exception as e:
@@ -116,8 +116,8 @@ def create_tar_artifact(root: Path) -> Path:
         raise
 
 
-def deploy_artifact(name: str, artifact_path: Path) -> None:
-    """Deploy the tar artifact to phi-cloud.
+def start_deploy(name: str, artifact_path: Path) -> None:
+    """Start the deployment of the tar artifact to phi-cloud.
 
     Args:
         name (str): The name of the playground app
@@ -128,7 +128,7 @@ def deploy_artifact(name: str, artifact_path: Path) -> None:
     """
     try:
         logger.debug(f"Deploying playground artifact: {artifact_path.name}")
-        deploy_playground_artifact(name=name, artifact_path=artifact_path)
+        start_playground_app_deploy(name=name, artifact_path=artifact_path)
         logger.debug(f"Successfully deployed playground artifact: {artifact_path.name}")
     except Exception:
         raise
@@ -145,7 +145,7 @@ def cleanup_artifact(artifact_path: Path) -> None:
     """
     try:
         logger.debug(f"Deleting playground artifact: {artifact_path.name}")
-        artifact_path.unlink()
+        # artifact_path.unlink()
         logger.debug(f"Successfully deleted playground artifact: {artifact_path.name}")
     except Exception as e:
         logger.error(f"Failed to delete playground artifact: {e}")
@@ -193,6 +193,9 @@ def deploy_playground_app(
         response_timer.start()
         root = root or Path.cwd()
         root = cast(Path, root)
+        if not root.exists() and not root.is_dir():
+            raise ValueError(f"Directory does not exist: {root}")
+
         try:
             deployment_info = create_deployment_info(app=app, root=root, status="Initializing...")
             panels: List[Panel] = [create_info_panel(deployment_info=deployment_info)]
@@ -222,7 +225,7 @@ def deploy_playground_app(
                 )
             )
             live_display.update(Group(*panels))
-            deploy_artifact(name=name, artifact_path=artifact_path)
+            start_deploy(name=name, artifact_path=artifact_path)
 
             # Step 3: Wait for deployment to complete
             status.update("[bold blue]Deploying playground app...[/bold blue]")

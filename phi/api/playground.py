@@ -35,8 +35,8 @@ def create_playground_endpoint(playground: PlaygroundEndpointCreate) -> bool:
     return False
 
 
-def deploy_playground_artifact(name: str, artifact_path: Path) -> bool:
-    """Deploy a playground artifact.
+def start_playground_app_deploy(name: str, artifact_path: Path) -> bool:
+    """Start a deployment of a playground artifact.
 
     Args:
         name (str): Name of the artifact
@@ -74,7 +74,7 @@ def deploy_playground_artifact(name: str, artifact_path: Path) -> bool:
         ):
             files = {"file": (artifact_path.name, file, "application/gzip")}
             r: Response = api_client.post(
-                ApiRoutes.PLAYGROUND_APP_DEPLOY,
+                ApiRoutes.START_PLAYGROUND_APP_DEPLOY,
                 files=files,
                 data={"name": name},
             )
