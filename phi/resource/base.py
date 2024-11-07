@@ -7,7 +7,7 @@ from phi.utils.log import logger
 
 class ResourceBase(InfraBase):
     # Resource name is required
-    name: str
+    name: Optional[str] = None
     # Resource type
     resource_type: Optional[str] = None
     # List of resource types to match against for filtering
@@ -20,7 +20,7 @@ class ResourceBase(InfraBase):
     resource_deleted: bool = False
 
     def get_resource_name(self) -> str:
-        return self.name
+        return self.name or ""
 
     def get_resource_type(self) -> str:
         if self.resource_type is None:

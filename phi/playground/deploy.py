@@ -1,8 +1,10 @@
+import io
 import time
 import tarfile
 from pathlib import Path
-from typing import Optional, List, cast
+from typing import Optional, List, cast, Dict, Any
 
+import httpx
 from rich import box
 from rich.text import Text
 from rich.panel import Panel
@@ -92,7 +94,7 @@ def create_error_panel(deployment_info: Text) -> Panel:
     )
 
 
-def create_tar_artifact(root: Path) -> Path:
+def create_tar_artifact(root: Path, dockerfile: str) -> Path:
     """Create a gzipped tar artifact of the playground files.
 
     Args:
@@ -107,8 +109,46 @@ def create_tar_artifact(root: Path) -> Path:
     artifact_path = root.with_suffix(".tar.gz")
     try:
         logger.debug(f"Creating playground artifact: {artifact_path.name}")
+
+        # # Fetch Dockerfile from GitHub
+        # dockerfile_url = "https://raw.githubusercontent.com/OWNER/REPO/BRANCH/path/to/Dockerfile"
+        # response = httpx.get(dockerfile_url)
+        # if response.status_code != 200:
+        #     raise Exception(f"Failed to read Dockerfile from {dockerfile_url}")
+        # dockerfile_content = response.content
+
         with tarfile.open(artifact_path, "w:gz") as tar:
-            tar.add(root, arcname="workspace")
+            tar.add(root, arcname="app")
+
+            # Add a Dockerfile inside the app/ directory
+            dockerfile_content = b"""FROM phidata/playground-app:latest
+
+# Copy requirements
+COPY app/requirements.txt ./
+
+# Install dependencies
+RUN uv pip install -r ./requirements.txt
+
+# Copy application files
+COPY app/* ./
+
+ENTRYPOINT ["/scripts/entrypoint.sh"]
+CMD ["chill"]
+"""
+            dockerfile_info = tarfile.TarInfo(name=dockerfile)
+            dockerfile_info.size = len(dockerfile_content)
+            tar.addfile(dockerfile_info, fileobj=io.BytesIO(dockerfile_content))
+
+            # Check if requirements.txt exists in the app/ directory
+            requirements_path = root.joinpath("requirements.txt")
+
+            # Add an empty requirements.txt file if it doesn't exist
+            if not requirements_path.is_file():
+                requirements_content = b"\n"
+                requirements_info = tarfile.TarInfo(name="app/requirements.txt")
+                requirements_info.size = len(requirements_content)
+                tar.addfile(requirements_info, fileobj=io.BytesIO(requirements_content))
+
         logger.debug(f"Successfully created playground artifact: {artifact_path.name}")
         return artifact_path
     except Exception as e:
@@ -116,7 +156,7 @@ def create_tar_artifact(root: Path) -> Path:
         raise
 
 
-def start_deploy(name: str, artifact_path: Path) -> None:
+def start_deploy(name: str, artifact_path: Path, dockerfile: str) -> None:
     """Start the deployment of the tar artifact to phi-cloud.
 
     Args:
@@ -128,7 +168,7 @@ def start_deploy(name: str, artifact_path: Path) -> None:
     """
     try:
         logger.debug(f"Deploying playground artifact: {artifact_path.name}")
-        start_playground_app_deploy(name=name, artifact_path=artifact_path)
+        start_playground_app_deploy(name=name, artifact_path=artifact_path, dockerfile=dockerfile)
         logger.debug(f"Successfully deployed playground artifact: {artifact_path.name}")
     except Exception:
         raise
@@ -145,7 +185,7 @@ def cleanup_artifact(artifact_path: Path) -> None:
     """
     try:
         logger.debug(f"Deleting playground artifact: {artifact_path.name}")
-        # artifact_path.unlink()
+        artifact_path.unlink()
         logger.debug(f"Successfully deleted playground artifact: {artifact_path.name}")
     except Exception as e:
         logger.error(f"Failed to delete playground artifact: {e}")
@@ -191,6 +231,8 @@ def deploy_playground_app(
     with Live(refresh_per_second=4) as live_display:
         response_timer = Timer()
         response_timer.start()
+
+        dockerfile = "app/Dockerfile"
         root = root or Path.cwd()
         root = cast(Path, root)
         if not root.exists() and not root.is_dir():
@@ -215,7 +257,7 @@ def deploy_playground_app(
                 )
             )
             live_display.update(Group(*panels))
-            artifact_path = create_tar_artifact(root=root)
+            artifact_path = create_tar_artifact(root=root, dockerfile=dockerfile)
 
             # Step 2: Deploy artifact
             status.update("[bold blue]Uploading playground app...[/bold blue]")
@@ -225,7 +267,7 @@ def deploy_playground_app(
                 )
             )
             live_display.update(Group(*panels))
-            start_deploy(name=name, artifact_path=artifact_path)
+            start_deploy(name=name, artifact_path=artifact_path, dockerfile=dockerfile)
 
             # Step 3: Wait for deployment to complete
             status.update("[bold blue]Deploying playground app...[/bold blue]")

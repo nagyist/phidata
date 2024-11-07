@@ -1,6 +1,6 @@
 from os import getenv
 from pathlib import Path
-from typing import Union, Dict, List
+from typing import Union, Dict, List, Any
 
 from httpx import Response, Client as HttpxClient
 
@@ -35,7 +35,7 @@ def create_playground_endpoint(playground: PlaygroundEndpointCreate) -> bool:
     return False
 
 
-def start_playground_app_deploy(name: str, artifact_path: Path) -> bool:
+def start_playground_app_deploy(name: str, artifact_path: Path, dockerfile: str) -> bool:
     """Start a deployment of a playground artifact.
 
     Args:
@@ -76,7 +76,7 @@ def start_playground_app_deploy(name: str, artifact_path: Path) -> bool:
             r: Response = api_client.post(
                 ApiRoutes.START_PLAYGROUND_APP_DEPLOY,
                 files=files,
-                data={"name": name},
+                data={"name": name, "dockerfile": dockerfile},
             )
 
             if invalid_response(r):
