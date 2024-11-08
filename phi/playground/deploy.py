@@ -156,7 +156,7 @@ CMD ["chill"]
         raise
 
 
-def start_deploy(name: str, artifact_path: Path, dockerfile: str) -> None:
+def start_deploy(app: str,name: str, artifact_path: Path, dockerfile: str) -> None:
     """Start the deployment of the tar artifact to phi-cloud.
 
     Args:
@@ -168,7 +168,7 @@ def start_deploy(name: str, artifact_path: Path, dockerfile: str) -> None:
     """
     try:
         logger.debug(f"Deploying playground artifact: {artifact_path.name}")
-        start_playground_app_deploy(name=name, artifact_path=artifact_path, dockerfile=dockerfile)
+        start_playground_app_deploy(app=app, name=name, artifact_path=artifact_path, dockerfile=dockerfile)
         logger.debug(f"Successfully deployed playground artifact: {artifact_path.name}")
     except Exception:
         raise
@@ -267,7 +267,7 @@ def deploy_playground_app(
                 )
             )
             live_display.update(Group(*panels))
-            start_deploy(name=name, artifact_path=artifact_path, dockerfile=dockerfile)
+            start_deploy(app=app, name=name, artifact_path=artifact_path, dockerfile=dockerfile)
 
             # Step 3: Wait for deployment to complete
             status.update("[bold blue]Deploying playground app...[/bold blue]")

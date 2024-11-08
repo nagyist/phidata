@@ -5,3 +5,4 @@ class InfraType(str, Enum):
     local = "local"
     docker = "docker"
     aws = "aws"
+    k8s = "k8s"

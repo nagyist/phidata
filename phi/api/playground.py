@@ -35,7 +35,7 @@ def create_playground_endpoint(playground: PlaygroundEndpointCreate) -> bool:
     return False
 
 
-def start_playground_app_deploy(name: str, artifact_path: Path, dockerfile: str) -> bool:
+def start_playground_app_deploy(app: str, name: str, artifact_path: Path, dockerfile: str) -> bool:
     """Start a deployment of a playground artifact.
 
     Args:
@@ -76,7 +76,7 @@ def start_playground_app_deploy(name: str, artifact_path: Path, dockerfile: str)
             r: Response = api_client.post(
                 ApiRoutes.START_PLAYGROUND_APP_DEPLOY,
                 files=files,
-                data={"name": name, "dockerfile": dockerfile},
+                data={"app": app, "name": name, "dockerfile": dockerfile},
             )
 
             if invalid_response(r):

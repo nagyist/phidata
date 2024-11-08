@@ -10,7 +10,7 @@ class PostgresDb(DockerApp, DbApp):
 
     # -*- Image Configuration
     image_name: str = "postgres"
-    image_tag: str = "15.4"
+    image_tag: str = "16.4"
 
     # -*- App Ports
     # Open a container port if open_port=True

@@ -1,4 +1,4 @@
-from typing import Optional, Any, Dict
+from typing import Optional, Any, Dict, List
 from typing_extensions import Literal
 
 from phi.aws.api_client import AwsApiClient
@@ -15,6 +15,7 @@ class EbsVolume(AwsResource):
     """
 
     resource_type: Optional[str] = "EbsVolume"
+    resource_type_list: List[str] = ["ebs-volume", "volume", "ebs"]
     service_name: str = "ec2"
 
     # The unique name to give to your volume.

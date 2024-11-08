@@ -239,6 +239,7 @@ class WorkspaceConfig(BaseModel):
         # Objects to read from the files in the workspace_dir_path
         docker_resource_groups: Optional[List[Any]] = None
         aws_resource_groups: Optional[List[Any]] = None
+        k8s_resource_groups: Optional[List[Any]] = None
 
         logger.debug("**--> Loading WorkspaceConfig")
 
@@ -278,6 +279,7 @@ class WorkspaceConfig(BaseModel):
                         if _type_name in [
                             "WorkspaceSettings",
                             "DockerResources",
+                            "K8sResources",
                             "AwsResources",
                         ]:
                             workspace_objects[obj_name] = obj
@@ -302,6 +304,13 @@ class WorkspaceConfig(BaseModel):
                     if docker_resource_groups is None:
                         docker_resource_groups = []
                     docker_resource_groups.append(obj)
+                elif _obj_type == "K8sResources":
+                    if not obj.enabled:
+                        logger.debug(f"Skipping {obj_name}: disabled")
+                        continue
+                    if k8s_resource_groups is None:
+                        k8s_resource_groups = []
+                    k8s_resource_groups.append(obj)
                 elif _obj_type == "AwsResources":
                     if not obj.enabled:
                         logger.debug(f"Skipping {obj_name}: disabled")
@@ -321,14 +330,21 @@ class WorkspaceConfig(BaseModel):
             if docker_resource_groups is not None:
                 filtered_infra_resources.extend(docker_resource_groups)
             if order == "delete":
+                if k8s_resource_groups is not None:
+                    filtered_infra_resources.extend(k8s_resource_groups)
                 if aws_resource_groups is not None:
                     filtered_infra_resources.extend(aws_resource_groups)
             else:
                 if aws_resource_groups is not None:
                     filtered_infra_resources.extend(aws_resource_groups)
+                if k8s_resource_groups is not None:
+                    filtered_infra_resources.extend(k8s_resource_groups)
         elif infra == "docker":
             if docker_resource_groups is not None:
                 filtered_infra_resources.extend(docker_resource_groups)
+        elif infra == "k8s":
+            if k8s_resource_groups is not None:
+                filtered_infra_resources.extend(k8s_resource_groups)
         elif infra == "aws":
             if aws_resource_groups is not None:
                 filtered_infra_resources.extend(aws_resource_groups)
@@ -368,6 +384,7 @@ class WorkspaceConfig(BaseModel):
 
         # Objects to read from the file
         docker_resource_groups: Optional[List[Any]] = None
+        k8s_resource_groups: Optional[List[Any]] = None
         aws_resource_groups: Optional[List[Any]] = None
 
         resource_file_parent_dir = resource_file.parent.resolve()
@@ -401,6 +418,13 @@ class WorkspaceConfig(BaseModel):
                 if docker_resource_groups is None:
                     docker_resource_groups = []
                 docker_resource_groups.append(obj)
+            elif _obj_type == "K8sResources":
+                if not obj.enabled:
+                    logger.debug(f"Skipping {obj_name}: disabled")
+                    continue
+                if k8s_resource_groups is None:
+                    k8s_resource_groups = []
+                k8s_resource_groups.append(obj)
             elif _obj_type == "AwsResources":
                 if not obj.enabled:
                     logger.debug(f"Skipping {obj_name}: disabled")
@@ -418,11 +442,15 @@ class WorkspaceConfig(BaseModel):
             if docker_resource_groups is not None:
                 filtered_infra_resources.extend(docker_resource_groups)
             if order == "delete":
+                if k8s_resource_groups is not None:
+                    filtered_infra_resources.extend(k8s_resource_groups)
                 if aws_resource_groups is not None:
                     filtered_infra_resources.extend(aws_resource_groups)
             else:
                 if aws_resource_groups is not None:
                     filtered_infra_resources.extend(aws_resource_groups)
+                if k8s_resource_groups is not None:
+                    filtered_infra_resources.extend(k8s_resource_groups)
         elif infra == "docker":
             if docker_resource_groups is not None:
                 filtered_infra_resources.extend(docker_resource_groups)
