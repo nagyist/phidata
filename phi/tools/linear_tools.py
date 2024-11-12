@@ -1,3 +1,4 @@
+from typing import Optional, Union
 import requests
 from os import getenv
 from phi.tools import Toolkit
@@ -95,7 +96,7 @@ class LinearTool(Toolkit):
             logger.error(f"Error fetching authenticated user details: {e}")
             raise
 
-    def get_issue_details(self, issue_id: str) -> dict | None:
+    def get_issue_details(self, issue_id: str) -> Optional[dict]:
         """
         Retrieve details of a specific issue by issue ID.
 
@@ -135,7 +136,7 @@ class LinearTool(Toolkit):
             logger.error(f"Error retrieving issue with ID {issue_id}: {e}")
             raise
 
-    def create_issue(self, title: str, description: str, team_id: str) -> dict | None:
+    def create_issue(self, title: str, description: str, team_id: str) -> Optional[dict]:
         """
         Create a new issue within a specific project and team.
 
@@ -182,7 +183,7 @@ class LinearTool(Toolkit):
             logger.error(f"Error creating issue '{title}' for team ID {team_id}: {e}")
             raise
 
-    def update_issue(self, issue_id: str, title: str | None, state_id: str | None) -> dict | None:
+    def update_issue(self, issue_id: str, title: Optional[str], state_id: Optional[str]) -> Optional[dict]:
         """
         Update the title or state of a specific issue by issue ID.
 
@@ -234,7 +235,7 @@ class LinearTool(Toolkit):
             logger.error(f"Error updating issue ID {issue_id}: {e}")
             raise
 
-    def get_user_assigned_issues(self, user_id: str) -> list[dict] | None:
+    def get_user_assigned_issues(self, user_id: str) -> Optional[list[dict]]:
         """
         Retrieve issues assigned to a specific user by user ID.
 
@@ -282,7 +283,7 @@ class LinearTool(Toolkit):
             logger.error(f"Error retrieving issues for user ID {user_id}: {e}")
             raise
 
-    def get_workflow_issues(self, workflow_id: str) -> list[dict] | None:
+    def get_workflow_issues(self, workflow_id: str) -> Optional[list[dict]]:
         """
         Retrieve issues within a specific workflow state by workflow ID.
 
@@ -325,7 +326,7 @@ class LinearTool(Toolkit):
             logger.error(f"Error retrieving issues for workflow state ID {workflow_id}: {e}")
             raise
 
-    def get_high_priority_issues(self) -> list[dict] | None:
+    def get_high_priority_issues(self) -> Optional[list[dict]]:
         """
         Retrieve issues with a high priority (priority <= 2).
 
