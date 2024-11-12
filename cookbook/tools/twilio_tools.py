@@ -34,4 +34,9 @@ agent = Agent(
     markdown=True,
 )
 
-agent.print_response("Can you send an SMS saying 'Your package has arrived' to +1234567890 from +1234567890?")
+sender_phone_number = ""
+receiver_phone_number = ""
+
+agent.print_response(
+    f"Can you send an SMS saying 'Your package has arrived' to {receiver_phone_number} from {sender_phone_number}?"
+)
