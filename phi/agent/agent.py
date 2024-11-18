@@ -42,6 +42,7 @@ from phi.utils.log import logger, set_log_level_to_debug, set_log_level_to_info
 from phi.utils.message import get_text_from_message
 from phi.utils.merge_dict import merge_dictionaries
 from phi.utils.timer import Timer
+from phi.workflow import Workflow
 
 
 class Agent(BaseModel):
@@ -206,6 +207,9 @@ class Agent(BaseModel):
     role: Optional[str] = None
     # Add instructions for transferring tasks to team members
     add_transfer_instructions: bool = True
+
+    # -*- Workflows
+    workflows: Optional[List[Workflow]] = None
 
     # debug_mode=True enables debug logs
     debug_mode: bool = Field(False, validate_default=True)
