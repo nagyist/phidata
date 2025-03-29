@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
 from agno.media import AudioArtifact, AudioResponse, ImageArtifact, VideoArtifact
-from agno.models.message import Message, MessageReferences
+from agno.models.message import Citations, Message, MessageReferences
 from agno.reasoning.step import ReasoningStep
 
 
@@ -17,6 +17,7 @@ class RunEvent(str, Enum):
     run_response = "RunResponse"
     run_completed = "RunCompleted"
     run_error = "RunError"
+    run_cancelled = "RunCancelled"
     tool_call_started = "ToolCallStarted"
     tool_call_completed = "ToolCallCompleted"
     reasoning_started = "ReasoningStarted"
@@ -49,6 +50,33 @@ class RunResponseExtraData:
             _dict["references"] = [r.model_dump() for r in self.references]
         return _dict
 
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "RunResponseExtraData":
+        add_messages = data.pop("add_messages", None)
+        add_messages = [Message.model_validate(message) for message in add_messages] if add_messages else None
+
+        history = data.pop("history", None)
+        history = [Message.model_validate(message) for message in history] if history else None
+
+        reasoning_steps = data.pop("reasoning_steps", None)
+        reasoning_steps = [ReasoningStep.model_validate(step) for step in reasoning_steps] if reasoning_steps else None
+
+        reasoning_messages = data.pop("reasoning_messages", None)
+        reasoning_messages = (
+            [Message.model_validate(message) for message in reasoning_messages] if reasoning_messages else None
+        )
+
+        references = data.pop("references", None)
+        references = [MessageReferences.model_validate(reference) for reference in references] if references else None
+
+        return cls(
+            add_messages=add_messages,
+            history=history,
+            reasoning_steps=reasoning_steps,
+            reasoning_messages=reasoning_messages,
+            references=references,
+        )
+
 
 @dataclass
 class RunResponse:
@@ -66,10 +94,12 @@ class RunResponse:
     session_id: Optional[str] = None
     workflow_id: Optional[str] = None
     tools: Optional[List[Dict[str, Any]]] = None
+    formatted_tool_calls: Optional[List[str]] = None
     images: Optional[List[ImageArtifact]] = None  # Images attached to the response
     videos: Optional[List[VideoArtifact]] = None  # Videos attached to the response
     audio: Optional[List[AudioArtifact]] = None  # Audio attached to the response
     response_audio: Optional[AudioResponse] = None  # Model audio response
+    citations: Optional[Citations] = None
     extra_data: Optional[RunResponseExtraData] = None
     created_at: int = field(default_factory=lambda: int(time()))
 
@@ -108,6 +138,13 @@ class RunResponse:
         _dict = self.to_dict()
 
         return json.dumps(_dict, indent=2)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "RunResponse":
+        messages = data.pop("messages", None)
+        messages = [Message.model_validate(message) for message in messages] if messages else None
+
+        return cls(messages=messages, **data)
 
     def get_content_as_string(self, **kwargs) -> str:
         import json

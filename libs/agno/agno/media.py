@@ -1,7 +1,7 @@
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 
 class Media(BaseModel):
@@ -92,6 +92,10 @@ class Video(BaseModel):
         }
         return {k: v for k, v in response_dict.items() if v is not None}
 
+    @classmethod
+    def from_artifact(cls, artifact: VideoArtifact) -> "Video":
+        return cls(url=artifact.url)
+
 
 class Audio(BaseModel):
     content: Optional[Any] = None  # Actual audio bytes content
@@ -157,6 +161,10 @@ class Audio(BaseModel):
         }
 
         return {k: v for k, v in response_dict.items() if v is not None}
+
+    @classmethod
+    def from_artifact(cls, artifact: AudioArtifact) -> "Audio":
+        return cls(url=artifact.url, content=artifact.base64_audio, format=artifact.mime_type)
 
 
 class AudioResponse(BaseModel):
@@ -255,3 +263,59 @@ class Image(BaseModel):
         }
 
         return {k: v for k, v in response_dict.items() if v is not None}
+
+    @classmethod
+    def from_artifact(cls, artifact: ImageArtifact) -> "Image":
+        return cls(url=artifact.url)
+
+
+class File(BaseModel):
+    url: Optional[str] = None
+    filepath: Optional[Union[Path, str]] = None
+    content: Optional[Any] = None  # Actual file bytes content
+    mime_type: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_at_least_one_source(cls, data):
+        """Ensure at least one of url, filepath, or content is provided."""
+        if isinstance(data, dict) and not any(data.get(field) for field in ["url", "filepath", "content"]):
+            raise ValueError("At least one of url, filepath, or content must be provided")
+        return data
+
+    @field_validator("mime_type")
+    @classmethod
+    def validate_mime_type(cls, v):
+        """Validate that the mime_type is one of the allowed types."""
+        if v is not None and v not in cls.valid_mime_types():
+            raise ValueError(f"Invalid MIME type: {v}. Must be one of: {cls.valid_mime_types()}")
+        return v
+
+    @classmethod
+    def valid_mime_types(cls) -> List[str]:
+        return [
+            "application/pdf",
+            "application/x-javascript",
+            "text/javascript",
+            "application/x-python",
+            "text/x-python",
+            "text/plain",
+            "text/html",
+            "text/css",
+            "text/md",
+            "text/csv",
+            "text/xml",
+            "text/rtf",
+        ]
+
+    @property
+    def file_url_content(self) -> Optional[Tuple[bytes, str]]:
+        import httpx
+
+        if self.url:
+            response = httpx.get(self.url)
+            content = response.content
+            mime_type = response.headers.get("Content-Type", "").split(";")[0]
+            return content, mime_type
+        else:
+            return None
